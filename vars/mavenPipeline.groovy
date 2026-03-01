@@ -26,7 +26,12 @@ def call(Map config) {
 
             stage('Build JAR') {
                 steps {
+                    //sh 'java -version'
+                    //sh 'mvn clean package'
+                    sh 'which java'
                     sh 'java -version'
+                    sh 'echo $JAVA_HOME'
+                    sh 'mvn -version'
                     sh 'mvn clean package'
                 }
             }
