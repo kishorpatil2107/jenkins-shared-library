@@ -10,6 +10,7 @@ def call(Map config) {
         }
 
         tools {
+            jdk 'JDK-17'
             maven 'Maven-3'
         }
 
@@ -25,28 +26,23 @@ def call(Map config) {
 
             stage('Build JAR') {
                 steps {
+                    sh 'java -version'
                     sh 'mvn clean package'
                 }
             }
 
             stage('Docker Build') {
                 steps {
-                    script {
-                        sh """
-                        docker build -t ${ECR_REPO}:${IMAGE_TAG} .
-                        """
-                    }
+                    sh "docker build -t ${ECR_REPO}:${IMAGE_TAG} ."
                 }
             }
 
             stage('ECR Login') {
                 steps {
-                    script {
-                        sh """
-                        aws ecr get-login-password --region ${AWS_REGION} \
-                        | docker login --username AWS --password-stdin ${ECR_REPO}
-                        """
-                    }
+                    sh """
+                    aws ecr get-login-password --region ${AWS_REGION} \
+                    | docker login --username AWS --password-stdin 725889403091.dkr.ecr.eu-west-1.amazonaws.com
+                    """
                 }
             }
 
