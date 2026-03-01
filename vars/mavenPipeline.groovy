@@ -3,6 +3,12 @@ def call(Map config) {
     pipeline {
         agent any
 
+        environment {
+            AWS_REGION = "eu-west-1"
+            ECR_REPO   = "725889403091.dkr.ecr.eu-west-1.amazonaws.com/nginx-ecr-repo-20251213"
+            IMAGE_TAG  = "${env.BUILD_NUMBER}"
+        }
+
         tools {
             maven 'Maven-3'
         }
@@ -12,35 +18,51 @@ def call(Map config) {
             stage('Checkout') {
                 steps {
                     git branch: config.branch,
-                        url: config.gitUrl
+                        url: 'git@github.com:kishorpatil2107/hello-app.git'
                 }
             }
 
-            stage('Build') {
+            stage('Build JAR') {
                 steps {
                     sh 'mvn clean package'
                 }
             }
 
-            stage('Test') {
+            stage('Docker Build') {
                 steps {
-                    sh 'mvn test'
+                    script {
+                        sh """
+                        docker build -t ${ECR_REPO}:${IMAGE_TAG} .
+                        """
+                    }
                 }
             }
 
-            stage('Archive') {
+            stage('ECR Login') {
                 steps {
-                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                    script {
+                        sh """
+                        aws ecr get-login-password --region ${AWS_REGION} \
+                        | docker login --username AWS --password-stdin ${ECR_REPO}
+                        """
+                    }
+                }
+            }
+
+            stage('Push Image') {
+                steps {
+                    sh "docker push ${ECR_REPO}:${IMAGE_TAG}"
                 }
             }
         }
 
         post {
             success {
-                echo "Build Successful"
+                echo "Docker image pushed successfully 🚀"
+                echo "Image: ${ECR_REPO}:${IMAGE_TAG}"
             }
             failure {
-                echo "Build Failed"
+                echo "Pipeline Failed ❌"
             }
         }
     }
