@@ -19,7 +19,7 @@ def call(Map config) {
             stage('Checkout') {
                 steps {
                     git branch: config.branch,
-                        url: 'git@github.com:kishorpatil2107/hello-app.git',
+                        url: 'https://github.com/kishorpatil2107/hello-app.git',
                         credentialsId: 'github-2026'
                 }
             }
