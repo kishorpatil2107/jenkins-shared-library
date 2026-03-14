@@ -19,7 +19,7 @@ def call(Map config) {
             stage('Checkout') {
                 steps {
                     git branch: config.branch,
-                        url: 'https://github.com/kishorpatil2107/hello-app.git',
+                        url: 'https://github.com/kishorpatil2107/jenkins-shared-library.git',
                         credentialsId: 'github-2026'
                 }
             }
