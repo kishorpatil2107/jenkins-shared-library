@@ -7,6 +7,8 @@ def call(Map config) {
             AWS_REGION = "eu-west-1"
             ECR_REPO   = "725889403091.dkr.ecr.eu-west-1.amazonaws.com/nginx-ecr-repo-20251213"
             IMAGE_TAG  = "${env.BUILD_NUMBER}"
+            EC2_USER   = "ubuntu"
+            EC2_IP     = "127.0.0.1" // local EC2 (Jenkins on same machine)
         }
 
         tools {
@@ -40,6 +42,7 @@ def call(Map config) {
                     sh 'cat Dockerfile'
                     sh 'pwd'
                     sh 'ls -l'
+                    sh 'ls -l Dockerfile'
                 }
             }
 
@@ -67,10 +70,10 @@ def call(Map config) {
             stage('Cleanup Old Images') {
                 steps {
                     sh """
-                    # Keep last 3 images, delete older
                     aws ecr describe-images --repository-name nginx-ecr-repo-20251213 --region ${AWS_REGION} \
                     --query 'sort_by(imageDetails,& imagePushedAt)[:-3].imageTags[0]' --output text | \
-                    xargs -r -n 1 aws ecr batch-delete-image --repository-name nginx-ecr-repo-20251213 --region ${AWS_REGION} --image-ids imageTag=
+                    xargs -r -n 1 -I {} aws ecr batch-delete-image \
+                    --repository-name nginx-ecr-repo-20251213 --region ${AWS_REGION} --image-ids imageTag={}
                     """
                 }
             }
@@ -78,15 +81,12 @@ def call(Map config) {
             stage('Deploy to EC2 (Local)') {
                 steps {
                     sh """
-                    # Stop old container if exists
-                    docker stop hello-app || true
-                    docker rm hello-app || true
-
-                    # Pull new image
-                    docker pull ${ECR_REPO}:${IMAGE_TAG}
-
-                    # Run new container
-                    docker run -d --name hello-app -p 8000:8000 ${ECR_REPO}:${IMAGE_TAG}
+                    ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} '
+                        docker pull ${ECR_REPO}:${IMAGE_TAG} &&
+                        docker stop hello-app || true &&
+                        docker rm hello-app || true &&
+                        docker run -d --name hello-app -p 8000:8000 ${ECR_REPO}:${IMAGE_TAG}
+                    '
                     """
                 }
             }
@@ -95,9 +95,8 @@ def call(Map config) {
 
         post {
             success {
-                echo "Pipeline completed successfully 🚀"
-                echo "Deployed Image: ${ECR_REPO}:${IMAGE_TAG}"
-                echo "App should be reachable at http://<EC2_PUBLIC_IP>:8000/hello"
+                echo "Docker image pushed successfully 🚀"
+                echo "Image: ${ECR_REPO}:${IMAGE_TAG}"
             }
             failure {
                 echo "Pipeline Failed ❌"
