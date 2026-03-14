@@ -20,7 +20,7 @@ def call(Map config) {
                 steps {
                     git branch: config.branch,
                         url: 'git@github.com:kishorpatil2107/hello-app.git',
-                        credentialsId: 'ken-ec2'
+                        credentialsId: 'github-2026'
                 }
             }
 
