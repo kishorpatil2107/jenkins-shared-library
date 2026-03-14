@@ -38,6 +38,12 @@ def call(Map config) {
                 }
             }
 
+            stage('Debug Dockerfile') {
+                steps {
+                    sh 'cat Dockerfile'
+                }
+            }
+
             stage('Docker Build') {
                 steps {
                     sh "docker build -t ${ECR_REPO}:${IMAGE_TAG} ."
