@@ -41,6 +41,9 @@ def call(Map config) {
             stage('Debug Dockerfile') {
                 steps {
                     sh 'cat Dockerfile'
+                    sh 'pwd'
+                    sh 'ls -l'
+                    sh 'ls -l Dockerfile'
                 }
             }
 
