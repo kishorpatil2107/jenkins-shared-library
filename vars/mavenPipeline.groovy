@@ -7,8 +7,6 @@ def call(Map config) {
             AWS_REGION = "eu-west-1"
             ECR_REPO   = "725889403091.dkr.ecr.eu-west-1.amazonaws.com/nginx-ecr-repo-20251213"
             IMAGE_TAG  = "${env.BUILD_NUMBER}"
-            EC2_USER   = "ubuntu"
-            EC2_IP     = "127.0.0.1" // local EC2 (Jenkins on same machine)
         }
 
         tools {
@@ -71,32 +69,31 @@ def call(Map config) {
                 steps {
                     sh """
                     aws ecr describe-images --repository-name nginx-ecr-repo-20251213 --region ${AWS_REGION} \
-                    --query 'sort_by(imageDetails,& imagePushedAt)[:-3].imageTags[0]' --output text | \
+                    --query 'sort_by(imageDetails,& imagePushedAt)[:-3].imageTags[]' --output text | \
+                    tr '\\t' '\\n' | \
                     xargs -r -n 1 -I {} aws ecr batch-delete-image \
                     --repository-name nginx-ecr-repo-20251213 --region ${AWS_REGION} --image-ids imageTag={}
                     """
                 }
             }
 
-            stage('Deploy to EC2 (Local)') {
+            stage('Deploy Locally') {
                 steps {
                     sh """
-                    ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} '
-                        docker pull ${ECR_REPO}:${IMAGE_TAG} &&
-                        docker stop hello-app || true &&
-                        docker rm hello-app || true &&
-                        docker run -d --name hello-app -p 8000:8000 ${ECR_REPO}:${IMAGE_TAG}
-                    '
+                    docker pull ${ECR_REPO}:${IMAGE_TAG}
+                    docker stop hello-app || true
+                    docker rm hello-app || true
+                    docker run -d --name hello-app -p 8000:8000 ${ECR_REPO}:${IMAGE_TAG}
                     """
                 }
             }
-
         }
 
         post {
             success {
-                echo "Docker image pushed successfully 🚀"
+                echo "Docker image pushed and deployed successfully 🚀"
                 echo "Image: ${ECR_REPO}:${IMAGE_TAG}"
+                echo "Access your app at: http://<EC2_PUBLIC_IP>:8000/hello"
             }
             failure {
                 echo "Pipeline Failed ❌"
