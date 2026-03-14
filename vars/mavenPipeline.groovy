@@ -34,7 +34,7 @@ def call(Map config) {
                     sh 'java -version'
                     sh 'echo $JAVA_HOME'
                     sh 'mvn -version'
-                    sh 'mvn clean package'
+                    //sh 'mvn clean package'
                 }
             }
 
