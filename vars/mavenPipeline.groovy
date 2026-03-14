@@ -28,6 +28,8 @@ def call(Map config) {
                 steps {
                     //sh 'java -version'
                     //sh 'mvn clean package'
+                    sh 'mvn clean package'
+                    sh 'ls -l target'
                     sh 'which java'
                     sh 'java -version'
                     sh 'echo $JAVA_HOME'
